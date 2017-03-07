@@ -12,17 +12,19 @@ Value* parse_null(char*&, char*);
 Value* parse_array(char*&, char*);
 Value* parse_string(char*&, char*);
 Value* parse_number(char*&, char*);
-// Prints the menu
-void checkInput(int, char**);
+// Gets path to JSON / Pretty Print files
+string getPath(bool);
 // Reads the JSON file into a string
-string readJSONFile(int, char**);
+string readJSONFile(string);
+// Pretty Prints the file
+void prettyPrint(string);
 // variables to store value counts
 int objects = 0, trues = 0, falses = 0, nulls = 0, arrays = 0, strings = 0, numbers = 0;
 Object* jsonObject;
 int main(int argc, char* argv[]) {
+	string str;
 	try {
-		checkInput(argc, argv);
-		string str = readJSONFile(argc, argv);
+		str = readJSONFile(getPath(false));
 		char* f = (char*)str.c_str();
 		char* l = (char*)strrchr(str.c_str(), '\0');
 		jsonObject = (Object*)parse(f, l);
@@ -34,23 +36,17 @@ int main(int argc, char* argv[]) {
 		cout << "Nulls: " << nulls << endl;
 		cout << "Strings: " << strings << endl;
 		cout << "Numbers: " << numbers << endl;
-		if(argc == 2)
-			cout << endl << jsonObject->print(0) << endl;
-		else {
-			ofstream printFile;
-			printFile.open(argv[2]);
-			if (printFile.is_open()) {
-				printFile << jsonObject->print(0);
-				cout << "\nPretty printed file to: " << (string)argv[2] << endl;
-			}
-		}
+		prettyPrint(getPath(true));
 	}
 	catch (const char* error) {
-		cout << endl << error;
+		cout << error << endl;
+		cin >> str;
 	}
 	catch (string error) {
-		cout << endl << error;
+		cout << error << endl;
+		cin >> str;
 	}
+	cin >> str;
 	return 0;
 }
 Value* parse(char*& f, char* l) {
@@ -93,7 +89,7 @@ Value* parse(char*& f, char* l) {
 Value* parse_true(char*& f, char* l) {
 	Bool* b = new Bool(true);
 	trues++;
-	while (*f != 'e') {
+	while (*f != 'e' && *f != 'E') {
 		f++;
 	}
 	f++;
@@ -103,7 +99,7 @@ Value* parse_true(char*& f, char* l) {
 Value* parse_false(char*& f, char* l) {
 	Bool* b = new Bool(false);
 	falses++;
-	while (*f != 'e') {
+	while (*f != 'e' && *f != 'E') {
 		f++;
 	}
 	f++;
@@ -114,7 +110,7 @@ Value* parse_null(char*& f, char* l) {
 	Null* n = new Null();
 	f++;
 	nulls++;
-	while (*f != 'l') {
+	while (*f != 'l' && *f != 'L') {
 		f++;
 	}
 	f += 2;
@@ -197,24 +193,52 @@ Value* parse_object(char*& f, char* l) {
 	f++;
 	return o;
 }
-void checkInput(int argc, char** argv) {
-	if (argc < 2 || argc > 3) {
-		throw "You must have 2-3 input parameters\nExample: parser.exe [path to JSON file] [path to pretty print file]";
+string getPath(bool forPrettyPrint) {
+	string filePath;
+	if (!forPrettyPrint) {
+		cout << "Enter the path to the JSON file you wish to analyze:\n";
+		cin >> filePath;
+		return filePath;
 	}
+	cout << "Pretty print to console? [y/n]\n";
+	cin >> filePath;
+	while (filePath != "y" && filePath != "n") {
+		cout << "\nYou must enter 'y' or 'n'!\n";
+		cin >> filePath;
+	}
+	if (filePath == "y") {
+		return "print_to_console";
+	}
+	cout << "Enter the path for the pretty printed file:\n";
+	cin >> filePath;
+	return filePath;
 }
 
-string readJSONFile(int argc, char** argv) {
+string readJSONFile(string filePath) {
 	ifstream inFile;
 	char c;
 	string str = "";
-	inFile.open(argv[1]);
+	inFile.open(filePath.c_str());
 	if (inFile.is_open()) {
 		while (inFile.get(c)) {
 			str += c;
 		}
 	}
 	else {
-		throw "Could not open json file: " + (string)argv[1];
+		throw "Could not open json file: " + filePath;
 	}
 	return str;
+}
+
+void prettyPrint(string ppPath) {
+	if (ppPath == "print_to_console")
+		cout << endl << jsonObject->print(0) << endl;
+	else {
+		ofstream printFile;
+		printFile.open(ppPath.c_str());
+		if (printFile.is_open()) {
+			printFile << jsonObject->print(0);
+			cout << "\nPretty printed file to: " << ppPath << endl;
+		}
+	}
 }
