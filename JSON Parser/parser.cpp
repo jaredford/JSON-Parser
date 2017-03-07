@@ -44,7 +44,6 @@ int main(int argc, char* argv[]) {
 				cout << "\nPretty printed file to: " << (string)argv[2] << endl;
 			}
 		}
-		cin >> str;
 	}
 	catch (const char* error) {
 		cout << endl << error;
